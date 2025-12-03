@@ -119,6 +119,26 @@ sudo docker run --rm \
   --data-volume /path/to/real_and_fake:/data
 ```
 
+## Docker ヘルパースクリプト（`run_fid_suite_docker.sh`）
+
+リポジトリ同梱の `fid/run_fid_suite_docker.sh` を使うと、同じデータセットに対して CEM-FID と通常の Inception FID を連続で測定し、結果を `fid/results/` 配下へ保存できます。主な特徴:
+
+- `REAL_DIR` と `GEN_DIR` をホスト側で指定すると、自動で `/data/real` / `/data/gen` にマウントして実行。
+- `--cem-backbone {cem500k|cem1.5m}` を Script オプションとして指定するだけで、MoCoV2 (CEM500K) と SwAV (CEM1.5M) を切り替え可能。
+- `fid/weights/` に配置したチェックポイントを自動検出（`--cem-weights` で明示的に指定することも可）。
+- `--` 以降に書いた追加オプションは両方の Python スクリプトへ転送されます（例: `--batch-size 64`）。
+
+SwAV 版で CEM-FID を計算したい場合の実行例:
+
+```bash
+./fid/run_fid_suite_docker.sh /path/to/real /path/to/gen \
+  --cem-backbone cem1.5m \
+  --cem-weights /home/tatsuki/デスクトップ/tatsuki_research/programs/cem-dataset/fid/weights/cem1.5m_swav_resnet50_200ep_balanced.pth.tar \
+  -- --batch-size 64
+```
+
+上記では CEM-FID が SwAV バックボーンで計算され、続いて通常の Inception FID が同じデータで計測されます。`fid/results/cem_fid/` と `fid/results/normal_fid/` にタイムスタンプ付き JSON が出力されるので、mocov2 との差分比較やログ管理が容易です。
+
 ## 追加の注意
 
 - ネットワークが使えない環境では、事前学習重みを手動でダウンロードして `--weights-path` に渡してください。
