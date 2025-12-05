@@ -93,3 +93,4 @@ fid/results/*
 
 # Enroot
 *.sqsh
+fid/batch_jobs.example.json
