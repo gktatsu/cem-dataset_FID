@@ -105,6 +105,7 @@ RESULTS_DIR="/home/tatsuki/デスクトップ/tatsuki_research/programs/cem-data
 mkdir -p "$WEIGHTS_DIR"
 mkdir -p "$RESULTS_DIR"
 mkdir -p "$RESULTS_DIR/cem_fid"
+mkdir -p "$RESULTS_DIR/cem_fid/$CEM_BACKBONE"
 mkdir -p "$RESULTS_DIR/normal_fid"
 
 CONTAINER_REAL="/data/real"
@@ -162,7 +163,7 @@ if [[ -n "$CEM_WEIGHTS" ]]; then
 fi
 
 COMMON_ARGS=("${EXTRA_ARGS[@]}" "--num-workers" "0" "--data-volume" "$GEN_DIR")
-CEM_OUTPUT="/results/cem_fid/cem_fid.json"
+CEM_OUTPUT="/results/cem_fid/${CEM_BACKBONE}/cem_fid.json"
 NORMAL_OUTPUT="/results/normal_fid/normal_fid.json"
 CEM_ARGS=("${COMMON_ARGS[@]}" "--output-json" "$CEM_OUTPUT" "--backbone" "$CEM_BACKBONE")
 if [[ -n "$CEM_WEIGHTS_CONTAINER" ]]; then
