@@ -168,9 +168,20 @@ fi
 CEM_WEIGHTS_REAL=""
 
 if [[ -n "$CEM_WEIGHTS" ]]; then
+  # If CEM_WEIGHTS is a relative path, treat it as relative to WEIGHTS_DIR
+  if [[ "$CEM_WEIGHTS" != /* ]]; then
+    CEM_WEIGHTS="$WEIGHTS_DIR/$CEM_WEIGHTS"
+  fi
+  
   CEM_WEIGHTS_REAL=$(normalize_path "$CEM_WEIGHTS")
-  if [[ ${CEM_WEIGHTS_REAL} != $WEIGHTS_DIR/* ]]; then
+  
+  # Normalize WEIGHTS_DIR for comparison
+  WEIGHTS_DIR_REAL=$(normalize_path "$WEIGHTS_DIR")
+  
+  if [[ ${CEM_WEIGHTS_REAL} != $WEIGHTS_DIR_REAL/* ]]; then
     echo "[ERROR] --cem-weights must reside within $WEIGHTS_DIR" >&2
+    echo "[INFO] WEIGHTS_DIR: $WEIGHTS_DIR_REAL" >&2
+    echo "[INFO] Provided weights path: $CEM_WEIGHTS_REAL" >&2
     exit 4
   fi
   if [[ ! -f "$CEM_WEIGHTS_REAL" ]]; then
