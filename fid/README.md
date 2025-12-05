@@ -7,6 +7,45 @@
 
 以下に依存ライブラリ、各スクリプトの概要・主なオプション・使い方例、差分（前処理の違い）をまとめます。
 
+## セットアップと実行フロー
+
+### 1. 事前学習済み重み
+
+- `fid/weights/` 配下に CEM500K / CEM1.5M のチェックポイントを配置してください。
+- ダウンロードリンクやファイル名の詳細はリポジトリ直下の `./README.md` 「Pre-trained weights」節を参照してください。
+
+### 2. 推奨実行形態
+
+- **ローカルマシン**: Docker が利用できる環境では `run_fid_suite_docker.sh` の利用を推奨します。依存関係をビルド済みイメージに閉じ込められるため、最も再現性があります。
+- **クラスタ / Docker 非対応環境**: `run_fid_suite_venv.sh` と Python venv を利用してください。GPU が使えるノードを選択すると計算が大幅に高速化します（CPU のみでも動作しますが、特徴抽出の所要時間が大きく増加します）。
+
+### 3. 環境構築ヘルパースクリプト
+
+`fid/setup_fid_env.sh` は Docker イメージのビルドと venv 構築を自動化します。
+
+```bash
+# Docker イメージのみビルド（ローカルデスクトップ向け）
+./fid/setup_fid_env.sh --mode docker
+
+# CUDA 対応 wheel を使って venv をセットアップ（クラスタ向け）
+./fid/setup_fid_env.sh --mode venv \
+  --venv-path /path/to/cem-fid-venv \
+  --torch-index https://download.pytorch.org/whl/cu121
+```
+
+- 既定 `--mode auto` は Docker が見つかれば Docker イメージを、見つからなければ venv を構築します。`--mode both` で両方をまとめて準備できます。
+- venv を構築した場合は、`run_fid_suite_venv.sh ... --venv /path/to/cem-fid-venv` のように同じパスを指定してください。
+- Docker イメージは既定で `cem-fid` タグが付きます。別名にしたい場合は `--docker-tag` を指定してください。
+
+### 4. 実行の流れ（まとめ）
+
+1. 重みを `fid/weights/` に配置する。
+2. `fid/setup_fid_env.sh` で Docker イメージまたは venv を準備する。
+3. ローカルでは `run_fid_suite_docker.sh REAL_DIR GEN_DIR [OPTIONS] -- [EXTRA_ARGS]` を、クラスタでは `run_fid_suite_venv.sh REAL_DIR GEN_DIR --venv /path/to/venv ...` を実行する。
+4. 結果 JSON は `fid/results/cem_fid/` と `fid/results/normal_fid/` に保存される。
+
+> **GPU 利用推奨**: どちらのスクリプトも CPU のみで動作しますが、画像枚数が多い場合は GPU で実行した方が数十倍高速です。GPU が無い環境では `--batch-size` を小さくしてメモリ使用量を抑えてください。
+
 ## 共通の前提（依存ライブラリ）
 両スクリプトで必要な Python パッケージ:
 
@@ -123,6 +162,7 @@ sudo docker run --rm \
 
 リポジトリ同梱の `fid/run_fid_suite_docker.sh` を使うと、同じデータセットに対して CEM-FID と通常の Inception FID を連続で測定し、結果を `fid/results/` 配下へ保存できます。主な特徴:
 
+- 事前に `fid/setup_fid_env.sh --mode docker` を実行して `cem-fid` イメージをビルドしてください。
 - `REAL_DIR` と `GEN_DIR` をホスト側で指定すると、自動で `/data/real` / `/data/gen` にマウントして実行。
 - `--cem-backbone {cem500k|cem1.5m}` を Script オプションとして指定するだけで、MoCoV2 (CEM500K) と SwAV (CEM1.5M) を切り替え可能。
 - `fid/weights/` に配置したチェックポイントを自動検出（`--cem-weights` で明示的に指定することも可）。
@@ -138,6 +178,20 @@ SwAV 版で CEM-FID を計算したい場合の実行例:
 ```
 
 上記では CEM-FID が SwAV バックボーンで計算され、続いて通常の Inception FID が同じデータで計測されます。`fid/results/cem_fid/` と `fid/results/normal_fid/` にタイムスタンプ付き JSON が出力されるので、mocov2 との差分比較やログ管理が容易です。
+
+## venv ヘルパースクリプト（`run_fid_suite_venv.sh`）
+
+Docker が利用できないクラスターでは、`fid/setup_fid_env.sh --mode venv --venv-path /path/to/venv` で依存ライブラリ入りの Python venv を用意し、以下のように実行します。
+
+```bash
+./fid/run_fid_suite_venv.sh REAL_DIR GEN_DIR \
+  --venv /path/to/venv \
+  --cem-backbone cem1.5m \
+  -- --batch-size 64 --device cuda
+```
+
+- `--venv` を省略すると、`fid/../venv` または `fid/venv` を自動検出します。複数ユーザーで共有する場合はパスを明示してください。
+- GPU ノードで実行する際は `--device cuda`（既定は自動判定）や `--batch-size` を環境に合わせて調整してください。CPU のみのノードでは実行できますが処理が非常に遅くなります。
 
 ## 追加の注意
 
