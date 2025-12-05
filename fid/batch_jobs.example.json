@@ -1,0 +1,40 @@
+{
+  "jobs": [
+    {
+      "name": "mask_25_50_2-1",
+      "real_dir": "/home/tatsuki/デスクトップ/tatsuki_research/datasets/compute_fid/datasets/WannerFIB/v2/real_all/",
+      "gen_dir": "/home/tatsuki/デスクトップ/tatsuki_research/datasets/generated_images/for_download/run_20251202_201832_648500_p662913_31f08124_mask_50_150_2-1/images/",
+      "cem_backbones": ["cem500k", "cem1.5m"],
+      "extra_args": ["--batch-size", "256"]
+    },
+    {
+      "name": "mask_25_50_2-1",
+      "real_dir": "/home/tatsuki/デスクトップ/tatsuki_research/datasets/compute_fid/datasets/WannerFIB/v2/real_all/",
+      "gen_dir": "/home/tatsuki/デスクトップ/tatsuki_research/datasets/generated_images/for_download/run_20251202_202517_454157_p691842_d1c9c3fe_mask_25_50_2-1/images/",
+      "cem_backbones": ["cem500k", "cem1.5m"],
+      "extra_args": ["--batch-size", "256"]
+    },
+    {
+      "name": "mask_200_350_3-1",
+      "real_dir": "/home/tatsuki/デスクトップ/tatsuki_research/datasets/compute_fid/datasets/WannerFIB/v2/real_all/",
+      "gen_dir": "/home/tatsuki/デスクトップ/tatsuki_research/datasets/generated_images/for_download/run_20251202_214943_983320_p242120_2a77c803_mask_200_350_3-1/images/",
+      "cem_backbones": ["cem500k", "cem1.5m"],
+      "extra_args": ["--batch-size", "256"]
+    },
+    {
+      "name": "mask_25_50_3-1",
+      "real_dir": "/home/tatsuki/デスクトップ/tatsuki_research/datasets/compute_fid/datasets/WannerFIB/v2/real_all/",
+      "gen_dir": "/home/tatsuki/デスクトップ/tatsuki_research/datasets/generated_images/for_download/run_20251202_215303_682356_p772873_27e47d8c_mask_25_50_3-1/images/",
+      "cem_backbones": ["cem500k", "cem1.5m"],
+      "extra_args": ["--batch-size", "256"]
+    },
+    {
+      "name": "edge_50_150",
+      "real_dir": "/home/tatsuki/デスクトップ/tatsuki_research/datasets/compute_fid/datasets/WannerFIB/v2/real_all/",
+      "gen_dir": "/home/tatsuki/デスクトップ/tatsuki_research/datasets/generated_images/for_download/run_20251204_171658_942516_p390769_35e34184_edge_50_150/images/",
+      "cem_backbones": ["cem500k", "cem1.5m"],
+      "extra_args": ["--batch-size", "256"]
+    }
+
+  ]
+}
