@@ -190,6 +190,34 @@ MoCoV2 と SwAV の両方を一括で評価したい場合は、`--cem-backbone`
 
 この例では CEM-FID が 2 回（cem500k → cem1.5m の順）実行され、それぞれ `fid/results/cem_fid/cem500k/` と `fid/results/cem_fid/cem1.5m/` に結果が保存されます。その後、通常の Inception FID が 1 回だけ実行され、`fid/results/normal_fid/` に保存されます。
 
+### バッチ処理ヘルパー（`run_fid_suite_batch.py`）
+
+同じ設定で複数のデータセットを一括評価したい場合は、JSON マニフェストを読み込む `fid/run_fid_suite_batch.py` が便利です。`jobs` 配列に複数のジョブを並べておくと、`run_fid_suite_docker.sh` が順番に実行されます。
+
+```json
+{
+  "jobs": [
+    {
+      "name": "wannerfib-v2-v1",
+      "real_dir": "/abs/path/to/WannerFIB/v2/real",
+      "gen_dir": "/abs/path/to/WannerFIB/v1/gen",
+      "cem_backbones": ["cem500k", "cem1.5m"],
+      "extra_args": ["--batch-size", "32"]
+    }
+  ]
+}
+```
+
+上記のようなファイルを `fid/batch_jobs.example.json` に用意しておき、次のように実行します。
+
+```bash
+./fid/run_fid_suite_batch.py fid/batch_jobs.example.json -- --batch-size 64
+```
+
+- `--script` で呼び出すスイートスクリプト（既定は `run_fid_suite_docker.sh`）を差し替え可能です。
+- `jobs` エントリごとに `cem_backbones`, `script_args`（スイート側の追加 CLI オプション）, `extra_args`（`--` 以降に渡すオプション）を個別に設定できます。
+- `--stop-on-error` や `--dry-run` などの制御オプションも用意しています。詳細は `fid/run_fid_suite_batch.py --help` を参照してください。
+
 ## venv ヘルパースクリプト（`run_fid_suite_venv.sh`）
 
 Docker が利用できないクラスターでは、`fid/setup_fid_env.sh --mode venv --venv-path /path/to/venv` で依存ライブラリ入りの Python venv を用意し、以下のように実行します。
