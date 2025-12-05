@@ -14,7 +14,7 @@ Constants:
   Results dir  : /home/tatsuki/デスクトップ/tatsuki_research/programs/cem-dataset/fid/results
 
 Options (must be specified before "--"):
-  --cem-backbone {cem500k|cem1.5m}  Select the CEM backbone (default: cem500k)
+  --cem-backbone {cem500k|cem1.5m}  Select a CEM backbone (repeatable, default: cem500k)
   --cem-weights PATH               Use a specific checkpoint inside the weights dir
 
 EXTRA_ARGS after "--" are forwarded to both Python scripts. A "--data-volume"
@@ -31,7 +31,7 @@ REAL_DIR=$1
 GEN_DIR=$2
 shift 2
 
-CEM_BACKBONE="cem500k"
+CEM_BACKBONES=()
 CEM_WEIGHTS=""
 EXTRA_ARGS=()
 
@@ -42,7 +42,7 @@ while [[ $# -gt 0 ]]; do
         echo "[ERROR] --cem-backbone requires an argument" >&2
         exit 1
       fi
-      CEM_BACKBONE=$2
+      CEM_BACKBONES+=("$2")
       shift 2
       ;;
     --cem-weights)
@@ -70,14 +70,34 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-case "$CEM_BACKBONE" in
-  cem500k|cem1.5m)
-    ;;
-  *)
-    echo "[ERROR] --cem-backbone must be cem500k or cem1.5m (got $CEM_BACKBONE)" >&2
-    exit 1
-    ;;
-esac
+if [[ ${#CEM_BACKBONES[@]} -eq 0 ]]; then
+  CEM_BACKBONES=("cem500k")
+fi
+
+declare -A _SEEN_BACKBONES=()
+declare -a CEM_BACKBONES_DEDUP=()
+for backbone in "${CEM_BACKBONES[@]}"; do
+  case "$backbone" in
+    cem500k|cem1.5m)
+      if [[ -z "${_SEEN_BACKBONES[$backbone]+x}" ]]; then
+        _SEEN_BACKBONES[$backbone]=1
+        CEM_BACKBONES_DEDUP+=("$backbone")
+      fi
+      ;;
+    *)
+      echo "[ERROR] --cem-backbone must be cem500k or cem1.5m (got $backbone)" >&2
+      exit 1
+      ;;
+  esac
+done
+unset _SEEN_BACKBONES
+CEM_BACKBONES=("${CEM_BACKBONES_DEDUP[@]}")
+unset CEM_BACKBONES_DEDUP
+
+if [[ -n "$CEM_WEIGHTS" && ${#CEM_BACKBONES[@]} -gt 1 ]]; then
+  echo "[ERROR] --cem-weights cannot be combined with multiple --cem-backbone values." >&2
+  exit 1
+fi
 
 for arg in "${EXTRA_ARGS[@]}"; do
   case "$arg" in
@@ -105,7 +125,9 @@ RESULTS_DIR="/home/tatsuki/デスクトップ/tatsuki_research/programs/cem-data
 mkdir -p "$WEIGHTS_DIR"
 mkdir -p "$RESULTS_DIR"
 mkdir -p "$RESULTS_DIR/cem_fid"
-mkdir -p "$RESULTS_DIR/cem_fid/$CEM_BACKBONE"
+for backbone in "${CEM_BACKBONES[@]}"; do
+  mkdir -p "$RESULTS_DIR/cem_fid/$backbone"
+done
 mkdir -p "$RESULTS_DIR/normal_fid"
 
 CONTAINER_REAL="/data/real"
@@ -139,36 +161,8 @@ normalize_path() {
   fi
 }
 
-if [[ -z "$CEM_WEIGHTS" ]]; then
-  default_name=$(select_default_weights "$CEM_BACKBONE")
-  if [[ -n "$default_name" && -f "$WEIGHTS_DIR/$default_name" ]]; then
-    CEM_WEIGHTS="$WEIGHTS_DIR/$default_name"
-  fi
-fi
-
-CEM_WEIGHTS_REAL=""
-CEM_WEIGHTS_CONTAINER=""
-
-if [[ -n "$CEM_WEIGHTS" ]]; then
-  CEM_WEIGHTS_REAL=$(normalize_path "$CEM_WEIGHTS")
-  if [[ ${CEM_WEIGHTS_REAL} != $WEIGHTS_DIR/* ]]; then
-    echo "[ERROR] --cem-weights must reside within $WEIGHTS_DIR" >&2
-    exit 4
-  fi
-  if [[ ! -f "$CEM_WEIGHTS_REAL" ]]; then
-    echo "[ERROR] Specified weights file not found: $CEM_WEIGHTS_REAL" >&2
-    exit 4
-  fi
-  CEM_WEIGHTS_CONTAINER="$CONTAINER_WEIGHTS/$(basename "$CEM_WEIGHTS_REAL")"
-fi
-
 COMMON_ARGS=("${EXTRA_ARGS[@]}" "--num-workers" "0" "--data-volume" "$GEN_DIR")
-CEM_OUTPUT="/results/cem_fid/${CEM_BACKBONE}/cem_fid.json"
 NORMAL_OUTPUT="/results/normal_fid/normal_fid.json"
-CEM_ARGS=("${COMMON_ARGS[@]}" "--output-json" "$CEM_OUTPUT" "--backbone" "$CEM_BACKBONE")
-if [[ -n "$CEM_WEIGHTS_CONTAINER" ]]; then
-  CEM_ARGS+=("--weights-path" "$CEM_WEIGHTS_CONTAINER")
-fi
 NORMAL_ARGS=("${COMMON_ARGS[@]}" "--output-json" "$NORMAL_OUTPUT")
 
 run_in_container() {
@@ -185,5 +179,38 @@ run_in_container() {
     "$script_path" "$CONTAINER_REAL" "$CONTAINER_GEN" "$@"
 }
 
-run_in_container "fid/compute_cem_fid.py" "${CEM_ARGS[@]}"
+for backbone in "${CEM_BACKBONES[@]}"; do
+  cem_weights_real=""
+  cem_weights_container=""
+  weights_candidate="$CEM_WEIGHTS"
+
+  if [[ -z "$weights_candidate" ]]; then
+    default_name=$(select_default_weights "$backbone")
+    if [[ -n "$default_name" && -f "$WEIGHTS_DIR/$default_name" ]]; then
+      weights_candidate="$WEIGHTS_DIR/$default_name"
+    fi
+  fi
+
+  if [[ -n "$weights_candidate" ]]; then
+    cem_weights_real=$(normalize_path "$weights_candidate")
+    if [[ ${cem_weights_real} != $WEIGHTS_DIR/* ]]; then
+      echo "[ERROR] --cem-weights must reside within $WEIGHTS_DIR" >&2
+      exit 4
+    fi
+    if [[ ! -f "$cem_weights_real" ]]; then
+      echo "[ERROR] Specified weights file not found: $cem_weights_real" >&2
+      exit 4
+    fi
+    cem_weights_container="$CONTAINER_WEIGHTS/$(basename "$cem_weights_real")"
+  fi
+
+  cem_output="/results/cem_fid/${backbone}/cem_fid.json"
+  cem_args=("${COMMON_ARGS[@]}" "--output-json" "$cem_output" "--backbone" "$backbone")
+  if [[ -n "$cem_weights_container" ]]; then
+    cem_args+=("--weights-path" "$cem_weights_container")
+  fi
+
+  run_in_container "fid/compute_cem_fid.py" "${cem_args[@]}"
+done
+
 run_in_container "fid/compute_normal_fid.py" "${NORMAL_ARGS[@]}"

@@ -42,7 +42,7 @@
 1. 重みを `fid/weights/` に配置する。
 2. `fid/setup_fid_env.sh` で Docker イメージまたは venv を準備する。
 3. ローカルでは `run_fid_suite_docker.sh REAL_DIR GEN_DIR [OPTIONS] -- [EXTRA_ARGS]` を、クラスタでは `run_fid_suite_venv.sh REAL_DIR GEN_DIR --venv /path/to/venv ...` を実行する。
-4. 結果 JSON は `fid/results/cem_fid/` と `fid/results/normal_fid/` に保存される。
+4. CEM-FID の結果 JSON は `fid/results/cem_fid/<backbone>/`（例: `fid/results/cem_fid/cem500k/`）に、通常 FID の結果は `fid/results/normal_fid/` に保存される。
 
 > **GPU 利用推奨**: どちらのスクリプトも CPU のみで動作しますが、画像枚数が多い場合は GPU で実行した方が数十倍高速です。GPU が無い環境では `--batch-size` を小さくしてメモリ使用量を抑えてください。
 
@@ -164,7 +164,7 @@ sudo docker run --rm \
 
 - 事前に `fid/setup_fid_env.sh --mode docker` を実行して `cem-fid` イメージをビルドしてください。
 - `REAL_DIR` と `GEN_DIR` をホスト側で指定すると、自動で `/data/real` / `/data/gen` にマウントして実行。
-- `--cem-backbone {cem500k|cem1.5m}` を Script オプションとして指定するだけで、MoCoV2 (CEM500K) と SwAV (CEM1.5M) を切り替え可能。
+- `--cem-backbone {cem500k|cem1.5m}` を Script オプションとして指定するだけで、MoCoV2 (CEM500K) と SwAV (CEM1.5M) を切り替え可能（オプションを複数回指定すると、指定したすべてのバックボーンで順番に CEM-FID を計算します）。
 - `fid/weights/` に配置したチェックポイントを自動検出（`--cem-weights` で明示的に指定することも可）。
 - `--` 以降に書いた追加オプションは両方の Python スクリプトへ転送されます（例: `--batch-size 64`）。
 
@@ -177,7 +177,18 @@ SwAV 版で CEM-FID を計算したい場合の実行例:
   -- --batch-size 64
 ```
 
-上記では CEM-FID が SwAV バックボーンで計算され、続いて通常の Inception FID が同じデータで計測されます。`fid/results/cem_fid/` と `fid/results/normal_fid/` にタイムスタンプ付き JSON が出力されるので、mocov2 との差分比較やログ管理が容易です。
+上記では CEM-FID が SwAV バックボーンで計算され、続いて通常の Inception FID が同じデータで計測されます。`fid/results/cem_fid/cem1.5m/` と `fid/results/normal_fid/` にタイムスタンプ付き JSON が出力されるので、MoCoV2 との差分比較やログ管理が容易です。
+
+MoCoV2 と SwAV の両方を一括で評価したい場合は、`--cem-backbone` を複数回指定してください。
+
+```bash
+./fid/run_fid_suite_docker.sh /path/to/real /path/to/gen \
+  --cem-backbone cem500k \
+  --cem-backbone cem1.5m \
+  -- --batch-size 32
+```
+
+この例では CEM-FID が 2 回（cem500k → cem1.5m の順）実行され、それぞれ `fid/results/cem_fid/cem500k/` と `fid/results/cem_fid/cem1.5m/` に結果が保存されます。その後、通常の Inception FID が 1 回だけ実行され、`fid/results/normal_fid/` に保存されます。
 
 ## venv ヘルパースクリプト（`run_fid_suite_venv.sh`）
 
