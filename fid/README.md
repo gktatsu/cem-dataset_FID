@@ -237,6 +237,21 @@ Docker が利用できないクラスターでは、`fid/setup_fid_env.sh --mode
 - ネットワークが使えない環境では、事前学習重みを手動でダウンロードして `--weights-path` に渡してください。
 - 各スクリプトは実行時のメタ情報（タイムスタンプ、入力ディレクトリ、使用オプションなど）を JSON に保存するため、実験ログとして利用できます。
 
+## PNG 整合性チェッカー（`fid/utils/check_png_integrity.py`）
+
+大量の生成画像を扱う際に、PNG ファイルが破損していないかを事前チェックするための軽量ユーティリティです。
+
+```bash
+source .venv/bin/activate
+pip install pillow tqdm
+python fid/utils/check_png_integrity.py /path/to/images
+```
+
+- 指定ディレクトリ以下の PNG を再帰的に走査し、開けない（`PIL.Image` で例外が出る）ファイルが見つかった場合はそのパスと例外内容をターミナルに表示します。
+- 破損ファイルが無ければ、検査した PNG 枚数と共に「All ... PNG file(s) opened successfully.」と表示されます。
+- `tqdm` がインストールされていれば進捗バーを自動表示します（不要な場合は `--no-progress`）。
+- Pillow (`pip install pillow`) や `tqdm` が未インストールの場合は、先に環境へ導入してください。
+
 ---
 
 スクリプト本体:
