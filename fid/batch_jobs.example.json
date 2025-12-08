@@ -2,15 +2,99 @@
   "jobs": [
     {
       "name": "real",
-      "real_dir": "path/to/real/images/",
-      "gen_dir": "path/to/generated/images/",
-      "cem_backbones": ["cem1.5m"],
-      "extra_args": ["--batch-size", "128"]
+      "real_dir": "/home/tatsuki/デスクトップ/tatsuki_research/datasets/compute_fid/datasets/WannerFIB/v2/real_1/",
+      "gen_dir": "/home/tatsuki/デスクトップ/tatsuki_research/datasets/compute_fid/datasets/WannerFIB/v2/real_2/",
+      "cem_backbones": ["cem500k", "cem1.5m"],
+      "extra_args": ["--batch-size", "256"]
     },
     {
       "name": "mask",
-      "real_dir": "path/to/real/images/",
-      "gen_dir": "path/to/generated/images/",
+      "real_dir": "/home/tatsuki/デスクトップ/tatsuki_research/datasets/compute_fid/datasets/WannerFIB/v2/real_all/",
+      "gen_dir": "/home/tatsuki/デスクトップ/tatsuki_research/datasets/generated_images/for_download/run_20251202_173355_523267_p986_5eff235f_mask/images/",
+      "cem_backbones": ["cem500k", "cem1.5m"],
+      "extra_args": ["--batch-size", "256"]
+    },
+    {
+      "name": "edge_25_50",
+      "real_dir": "/home/tatsuki/デスクトップ/tatsuki_research/datasets/compute_fid/datasets/WannerFIB/v2/real_all/",
+      "gen_dir": "/home/tatsuki/デスクトップ/tatsuki_research/datasets/generated_images/for_download/run_20251202_181417_798837_p733955_5347d487_edge_25_50/images/",
+      "cem_backbones": ["cem500k", "cem1.5m"],
+      "extra_args": ["--batch-size", "256"]
+    },
+    {
+      "name": "edge_50_150",
+      "real_dir": "/home/tatsuki/デスクトップ/tatsuki_research/datasets/compute_fid/datasets/WannerFIB/v2/real_all/",
+      "gen_dir": "/home/tatsuki/デスクトップ/tatsuki_research/datasets/generated_images/for_download/run_20251204_171658_942516_p390769_35e34184_edge_50_150/images/",
+      "cem_backbones": ["cem500k", "cem1.5m"],
+      "extra_args": ["--batch-size", "256"]
+    },
+    {
+      "name": "edge_100_200",
+      "real_dir": "/home/tatsuki/デスクトップ/tatsuki_research/datasets/compute_fid/datasets/WannerFIB/v2/real_all/",
+      "gen_dir": "/home/tatsuki/デスクトップ/tatsuki_research/datasets/generated_images/for_download/run_20251202_181227_362321_p13073_8e911bfd_edge_100_200/images/",
+      "cem_backbones": ["cem500k", "cem1.5m"],
+      "extra_args": ["--batch-size", "256"]
+    },
+    {
+      "name": "edge_200_350",
+      "real_dir": "/home/tatsuki/デスクトップ/tatsuki_research/datasets/compute_fid/datasets/WannerFIB/v2/real_all/",
+      "gen_dir": "/home/tatsuki/デスクトップ/tatsuki_research/datasets/generated_images/for_download/run_20251202_175636_696156_p7395_359d7dfa_edge_200_350/images/",
+      "cem_backbones": ["cem500k", "cem1.5m"],
+      "extra_args": ["--batch-size", "256"]
+    },
+    {
+      "name": "multi_0.5_25_50",
+      "real_dir": "/home/tatsuki/デスクトップ/tatsuki_research/datasets/compute_fid/datasets/WannerFIB/v2/real_all/",
+      "gen_dir": "/home/tatsuki/デスクトップ/tatsuki_research/datasets/generated_images/for_download/run_20251202_202517_454157_p691842_d1c9c3fe_mask_25_50_2-1/images/",
+      "cem_backbones": ["cem500k", "cem1.5m"],
+      "extra_args": ["--batch-size", "256"]
+    },
+    {
+      "name": "multi_0.5_50_150",
+      "real_dir": "/home/tatsuki/デスクトップ/tatsuki_research/datasets/compute_fid/datasets/WannerFIB/v2/real_all/",
+      "gen_dir": "/home/tatsuki/デスクトップ/tatsuki_research/datasets/generated_images/for_download/run_20251202_201832_648500_p662913_31f08124_mask_50_150_2-1/images/",
+      "cem_backbones": ["cem500k", "cem1.5m"],
+      "extra_args": ["--batch-size", "256"]
+    },
+    {
+      "name": "multi_0.5_100_200",
+      "real_dir": "/home/tatsuki/デスクトップ/tatsuki_research/datasets/compute_fid/datasets/WannerFIB/v2/real_all/",
+      "gen_dir": "/home/tatsuki/デスクトップ/tatsuki_research/datasets/generated_images/for_download/run_20251202_201832_912336_p662911_3bae0a64_mask_100_200_2-1/images/",
+      "cem_backbones": ["cem500k", "cem1.5m"],
+      "extra_args": ["--batch-size", "256"]
+    },
+    {
+      "name": "multi_0.5_200_350",
+      "real_dir": "/home/tatsuki/デスクトップ/tatsuki_research/datasets/compute_fid/datasets/WannerFIB/v2/real_all/",
+      "gen_dir": "/home/tatsuki/デスクトップ/tatsuki_research/datasets/generated_images/for_download/run_20251202_193238_420857_p225260_3f13d708_mask_200_350_2-1/images/",
+      "cem_backbones": ["cem500k", "cem1.5m"],
+      "extra_args": ["--batch-size", "256"]
+    },
+    {
+      "name": "multi_0.33_25_50",
+      "real_dir": "/home/tatsuki/デスクトップ/tatsuki_research/datasets/compute_fid/datasets/WannerFIB/v2/real_all/",
+      "gen_dir": "/home/tatsuki/デスクトップ/tatsuki_research/datasets/generated_images/for_download/run_20251202_215303_682356_p772873_27e47d8c_mask_25_50_3-1/images/",
+      "cem_backbones": ["cem500k", "cem1.5m"],
+      "extra_args": ["--batch-size", "256"]
+    },
+    {
+      "name": "multi_0.33_50_150",
+      "real_dir": "/home/tatsuki/デスクトップ/tatsuki_research/datasets/compute_fid/datasets/WannerFIB/v2/real_all/",
+      "gen_dir": "/home/tatsuki/デスクトップ/tatsuki_research/datasets/generated_images/for_download/run_20251202_215136_120799_p768420_e7b29ce1_mask_50_150_3-1/images/",
+      "cem_backbones": ["cem500k", "cem1.5m"],
+      "extra_args": ["--batch-size", "256"]
+    },
+    {
+      "name": "multi_0.33_100_200",
+      "real_dir": "/home/tatsuki/デスクトップ/tatsuki_research/datasets/compute_fid/datasets/WannerFIB/v2/real_all/",
+      "gen_dir": "/home/tatsuki/デスクトップ/tatsuki_research/datasets/generated_images/for_download/run_20251202_214944_065552_p246304_86edbb95_mask_100_200_3-1/images/",
+      "cem_backbones": ["cem500k", "cem1.5m"],
+      "extra_args": ["--batch-size", "256"]
+    },
+    {
+      "name": "multi_0.33_200_350",
+      "real_dir": "/home/tatsuki/デスクトップ/tatsuki_research/datasets/compute_fid/datasets/WannerFIB/v2/real_all/",
+      "gen_dir": "/home/tatsuki/デスクトップ/tatsuki_research/datasets/generated_images/for_download/run_20251202_214943_983320_p242120_2a77c803_mask_200_350_3-1/images/",
       "cem_backbones": ["cem500k", "cem1.5m"],
       "extra_args": ["--batch-size", "256"]
     }
