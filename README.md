@@ -71,6 +71,15 @@ Currently, pre-trained weights are only available for PyTorch. For an example of
 
 For image deduplication and filtering routines see the ```dataset``` directory README. Results on a small example 3D image volume can be reviewed in ```notebooks/deduplication_and_filtering.ipynb```.
 
+## FID/KID Evaluation Tools (Added in this fork)
+
+This fork adds a `fid/` directory containing utility scripts for computing FID (Fréchet Inception Distance) and KID (Kernel Inception Distance) using CEM pre-trained models.
+
+- `compute_cem_fid.py`: Computes FID/KID using CEM500K or CEM1.5M pre-trained ResNet50 as the feature extractor (optimized for EM images).
+- `compute_normal_fid.py`: Computes standard FID/KID using ImageNet pre-trained Inception v3.
+
+Helper scripts for Docker and venv execution are also provided. See `fid/README.md` (English) or `fid/README_ja.md` (Japanese) for details.
+
 ## Citing this work
 
 Please cite this work.

@@ -1,53 +1,54 @@
-# FID / KID 計算ツールの使い方
+# FID / KID Calculation Tools
 
-このディレクトリには FID（Fréchet Inception Distance）および KID（Kernel Inception Distance）を計算するためのユーティリティスクリプトが含まれます。主に次の 2 つのスクリプトを提供しています。
+This directory contains utility scripts for computing FID (Fréchet Inception Distance) and KID (Kernel Inception Distance). Two main scripts are provided:
 
-- `compute_cem_fid.py` : CEM 事前学習済み ResNet50（CEM500K / CEM1.5M）を特徴抽出に用いる EM 画像向けの FID/KID 計算スクリプト。
-- `compute_normal_fid.py` : torchvision の ImageNet 学習済み Inception v3 を用いる、一般的な FID/KID 計算スクリプト。
+- `compute_cem_fid.py`: FID/KID calculation for EM images using CEM pre-trained ResNet50 (CEM500K / CEM1.5M) as the feature extractor.
+- `compute_normal_fid.py`: Standard FID/KID calculation using torchvision's ImageNet pre-trained Inception v3.
 
-以下に依存ライブラリ、各スクリプトの概要・主なオプション・使い方例、差分（前処理の違い）をまとめます。
+This document covers dependencies, script overviews, main options, usage examples, and preprocessing differences between the two approaches.
 
-## セットアップと実行フロー
+## Setup and Execution Flow
 
-### 1. 事前学習済み重み
+### 1. Pre-trained Weights
 
-- `fid/weights/` 配下に CEM500K / CEM1.5M のチェックポイントを配置してください。
-- ダウンロードリンクやファイル名の詳細はリポジトリ直下の `./README.md` 「Pre-trained weights」節を参照してください。
+- Place CEM500K / CEM1.5M checkpoints under `fid/weights/`.
+- See the "Pre-trained weights" section in the repository root `./README.md` for download links and filenames.
 
-### 2. 推奨実行形態
+### 2. Recommended Execution Methods
 
-- **ローカルマシン**: Docker が利用できる環境では `run_fid_suite_docker.sh` の利用を推奨します。依存関係をビルド済みイメージに閉じ込められるため、最も再現性があります。
-- **クラスタ / Docker 非対応環境**: `run_fid_suite_venv.sh` と Python venv を利用してください。GPU が使えるノードを選択すると計算が大幅に高速化します（CPU のみでも動作しますが、特徴抽出の所要時間が大きく増加します）。
+- **Local machine**: If Docker is available, we recommend using `run_fid_suite_docker.sh`. Encapsulating dependencies in a pre-built image provides the best reproducibility.
+- **Cluster / Non-Docker environments**: Use `run_fid_suite_venv.sh` with a Python venv. Running on GPU nodes significantly speeds up computation (CPU-only execution works but feature extraction takes much longer).
 
-### 3. 環境構築ヘルパースクリプト
+### 3. Environment Setup Helper Script
 
-`fid/setup_fid_env.sh` は Docker イメージのビルドと venv 構築を自動化します。
+`fid/setup_fid_env.sh` automates Docker image building and venv creation.
 
 ```bash
-# Docker イメージのみビルド（ローカルデスクトップ向け）
+# Build Docker image only (for local desktop)
 ./fid/setup_fid_env.sh --mode docker
 
-# CUDA 対応 wheel を使って venv をセットアップ（クラスタ向け）
+# Set up venv with CUDA-enabled wheels (for cluster)
 ./fid/setup_fid_env.sh --mode venv \
   --venv-path /path/to/cem-fid-venv \
   --torch-index https://download.pytorch.org/whl/cu121
 ```
 
-- 既定 `--mode auto` は Docker が見つかれば Docker イメージを、見つからなければ venv を構築します。`--mode both` で両方をまとめて準備できます。
-- venv を構築した場合は、`run_fid_suite_venv.sh ... --venv /path/to/cem-fid-venv` のように同じパスを指定してください。
-- Docker イメージは既定で `cem-fid` タグが付きます。別名にしたい場合は `--docker-tag` を指定してください。
+- Default `--mode auto` builds the Docker image if Docker is found, otherwise creates a venv. Use `--mode both` to prepare both.
+- When using venv, specify the same path with `run_fid_suite_venv.sh ... --venv /path/to/cem-fid-venv`.
+- The Docker image is tagged `cem-fid` by default. Use `--docker-tag` to specify a different name.
 
-### 4. 実行の流れ（まとめ）
+### 4. Execution Summary
 
-1. 重みを `fid/weights/` に配置する。
-2. `fid/setup_fid_env.sh` で Docker イメージまたは venv を準備する。
-3. ローカルでは `run_fid_suite_docker.sh REAL_DIR GEN_DIR [OPTIONS] -- [EXTRA_ARGS]` を、クラスタでは `run_fid_suite_venv.sh REAL_DIR GEN_DIR --venv /path/to/venv ...` を実行する。
-4. CEM-FID の結果 JSON は `fid/results/cem_fid/<backbone>/`（例: `fid/results/cem_fid/cem500k/`）に、通常 FID の結果は `fid/results/normal_fid/` に保存される。
+1. Place weights under `fid/weights/`.
+2. Run `fid/setup_fid_env.sh` to prepare the Docker image or venv.
+3. For local execution, use `run_fid_suite_docker.sh REAL_DIR GEN_DIR [OPTIONS] -- [EXTRA_ARGS]`. For clusters, use `run_fid_suite_venv.sh REAL_DIR GEN_DIR --venv /path/to/venv ...`.
+4. CEM-FID results are saved to `fid/results/cem_fid/<backbone>/` (e.g., `fid/results/cem_fid/cem500k/`), and normal FID results are saved to `fid/results/normal_fid/`.
 
-> **GPU 利用推奨**: どちらのスクリプトも CPU のみで動作しますが、画像枚数が多い場合は GPU で実行した方が数十倍高速です。GPU が無い環境では `--batch-size` を小さくしてメモリ使用量を抑えてください。
+> **GPU Recommended**: Both scripts work on CPU-only environments, but GPU execution is tens of times faster for large image sets. In CPU-only environments, reduce `--batch-size` to limit memory usage.
 
-## 共通の前提（依存ライブラリ）
-両スクリプトで必要な Python パッケージ:
+## Prerequisites (Dependencies)
+
+Python packages required by both scripts:
 
 - `torch`
 - `torchvision`
@@ -55,95 +56,97 @@
 - `scipy`
 - `tqdm`
 
-未インストールの場合は、仮想環境を有効にした上で次を実行してください。
+If not installed, activate your virtual environment and run:
 
 ```bash
 pip install torch torchvision numpy scipy tqdm
 ```
 
-## compute_cem_fid.py（CEM ResNet50 を使う）
+## compute_cem_fid.py (Using CEM ResNet50)
 
-概要
-- `compute_cem_fid.py` は CEM500K (MoCoV2) または CEM1.5M (SwAV) の事前学習済み ResNet50 を特徴抽出器として用い、2 つの EM 画像フォルダ間の FID を算出します。オプションで KID も推定できます。グレースケールの EM 画像を自動で 3 チャンネルに変換し、CEM 事前学習時と同じ前処理（リサイズ・正規化）を適用した上で 2048 次元のグローバル平均プーリング特徴を抽出します。
+### Overview
 
-基本的な使い方
+`compute_cem_fid.py` uses CEM500K (MoCoV2) or CEM1.5M (SwAV) pre-trained ResNet50 as the feature extractor to compute FID between two EM image directories. KID can also be computed optionally. Grayscale EM images are automatically converted to 3 channels, and the same preprocessing (resize, normalization) used during CEM pre-training is applied to extract 2048-dimensional global average pooling features.
 
-```bash
-python fid/compute_cem_fid.py REAL_DIR GEN_DIR [オプション]
-```
-
-- `REAL_DIR`: 実画像が入ったディレクトリ
-- `GEN_DIR`: 生成画像が入ったディレクトリ
-
-主なオプション（抜粋）
-
-| オプション | 既定値 | 説明 |
-|---|---:|---|
-| `--backbone {cem500k, cem1.5m}` | `cem500k` | 使用する CEM 事前学習モデル |
-| `--batch-size INT` | `32` | 特徴抽出時のバッチサイズ |
-| `--num-workers INT` | `4` | DataLoader のワーカープロセス数 |
-| `--device` | 自動 (GPU があれば `cuda`) | 推論デバイス |
-| `--image-size INT` | `224` | 入力をリサイズするサイズ（CEM と同一） |
-| `--weights-path PATH` | なし | 手動でダウンロードした重みを指定する場合に使用 |
-| `--download-dir PATH` | なし | 重みのキャッシュ先を指定する場合に使用（`TORCH_HOME` を参照） |
-| `--output-json PATH` | `cem_fid.json` | 結果保存先（実行時にタイムスタンプが付与される場合あり） |
-| `--compute-kid` | 無効 | 指定すると KID も計算（特徴を保存して推定） |
-| `--kid-subset-size INT` | `1000` | KID サブセットあたりのサンプル数 |
-| `--kid-subset-count INT` | `100` | KID のサブセット試行回数 |
-| `--seed INT` | `42` | KID 用乱数シード |
-
-出力
-
-- コンソールに FID（および KID の場合は平均と標準誤差）を表示します。
-- 指定した `--output-json` に測定結果（FID/KID、バックボーン、画像数、正規化パラメータ、UTC タイムスタンプ、入力ディレクトリ等）を JSON として保存します。
-
-備考
-
-- 初回実行時に Zenodo から事前学習重みを自動ダウンロードする実装になっている場合があります（ネットワークが無い環境では手動ダウンロードして `--weights-path` を指定してください）。
-
-## compute_normal_fid.py（ImageNet Inception v3 を使う）
-
-概要
-- `compute_normal_fid.py` は torchvision の ImageNet 学習済み Inception v3 を用いて、実画像群と生成画像群の FID（およびオプションで KID）を算出するユーティリティです。標準的な Inception ベースの FID 評価を行います。
-
-基本的な使い方
+### Basic Usage
 
 ```bash
-python fid/compute_normal_fid.py REAL_DIR GEN_DIR [オプション]
+python fid/compute_cem_fid.py REAL_DIR GEN_DIR [OPTIONS]
 ```
 
-主なオプション（抜粋）
+- `REAL_DIR`: Directory containing real images
+- `GEN_DIR`: Directory containing generated images
 
-| オプション | 既定値 | 説明 |
+### Main Options
+
+| Option | Default | Description |
 |---|---:|---|
-| `--batch-size INT` | `32` | 特徴抽出時のバッチサイズ |
-| `--num-workers INT` | `4` | DataLoader のワーカープロセス数 |
-| `--device` | 自動 (GPU があれば `cuda`) | 推論デバイス |
-| `--image-size INT` | `299` | Inception v3 が期待する入力解像度（既定 299） |
-| `--output-json PATH` | `inception_fid.json` | 結果保存先（タイムスタンプ付きにする挙動あり） |
-| `--data-volume STR` | なし | 実行環境メモ（ホスト:コンテナ マウント等）を記録する文字列 |
-| `--compute-kid` | 無効 | 指定すると KID も計算（特徴を保存して推定） |
-| `--kid-subset-size INT` | `1000` | KID サブセットあたりのサンプル数 |
-| `--kid-subset-count INT` | `100` | KID のサブセット試行回数 |
-| `--seed INT` | `42` | KID 用乱数シード |
+| `--backbone {cem500k, cem1.5m}` | `cem500k` | CEM pre-trained model to use |
+| `--batch-size INT` | `32` | Batch size for feature extraction |
+| `--num-workers INT` | `4` | Number of DataLoader worker processes |
+| `--device` | Auto (GPU if available) | Inference device |
+| `--image-size INT` | `224` | Resize input to this size (same as CEM) |
+| `--weights-path PATH` | None | Specify manually downloaded weights |
+| `--download-dir PATH` | None | Cache directory for weights (see `TORCH_HOME`) |
+| `--output-json PATH` | `cem_fid.json` | Output file (timestamp may be appended) |
+| `--compute-kid` | Disabled | Also compute KID (saves features for estimation) |
+| `--kid-subset-size INT` | `1000` | Samples per KID subset |
+| `--kid-subset-count INT` | `100` | Number of KID subset trials |
+| `--seed INT` | `42` | Random seed for KID |
 
-出力
+### Output
 
-- コンソールに FID（および KID の場合は平均と標準誤差）を表示します。
-- 指定した `--output-json` に測定結果（FID/KID、バックボーン名、重み情報、画像数、正規化値、UTC タイムスタンプ、入力ディレクトリ等）を JSON として保存します。
+- Prints FID (and KID mean/stderr if enabled) to console.
+- Saves results to the specified `--output-json` as JSON, including FID/KID, backbone, image counts, normalization parameters, UTC timestamp, and input directories.
 
-## 前処理の違い（両スクリプトの差分）
+### Notes
 
-- `compute_cem_fid.py` は CEM 用の ResNet50 を使うため、グレースケール EM 画像を 3 チャンネル化し、CEM 事前学習時と同一の正規化（平均・標準偏差）および解像度（224）を用います。出力特徴は ResNet50 のグローバル平均プーリング（2048 次元）です。
-- `compute_normal_fid.py` は ImageNet 学習済み Inception v3 を用いるため、RGB 入力（グレースケール→RGB に変換して使用可能）を 299×299 にリサイズし、ImageNet の正規化を適用します。Inception の出力を用いて FID/KID を計算します。
+- Pre-trained weights may be automatically downloaded from Zenodo on first run. For offline environments, manually download and specify with `--weights-path`.
 
-## ベストプラクティス
+## compute_normal_fid.py (Using ImageNet Inception v3)
 
-- 評価対象の画像のみを含むディレクトリを指定してください（スクリプトは再帰的に画像を探索します）。
-- GPU 利用時は `--batch-size` を増やすと高速化できますが、メモリに注意してください。
-- KID を有効にする場合、`--kid-subset-size` と `--kid-subset-count` の値により計算コストが増加します。適切な値に調整してください。
+### Overview
 
-## Docker 利用例（CEM ResNet50 の例）
+`compute_normal_fid.py` uses torchvision's ImageNet pre-trained Inception v3 to compute FID (and optionally KID) between real and generated image sets. This provides standard Inception-based FID evaluation.
+
+### Basic Usage
+
+```bash
+python fid/compute_normal_fid.py REAL_DIR GEN_DIR [OPTIONS]
+```
+
+### Main Options
+
+| Option | Default | Description |
+|---|---:|---|
+| `--batch-size INT` | `32` | Batch size for feature extraction |
+| `--num-workers INT` | `4` | Number of DataLoader worker processes |
+| `--device` | Auto (GPU if available) | Inference device |
+| `--image-size INT` | `299` | Input resolution expected by Inception v3 |
+| `--output-json PATH` | `inception_fid.json` | Output file (timestamp may be appended) |
+| `--data-volume STR` | None | Environment memo (e.g., host:container mount info) |
+| `--compute-kid` | Disabled | Also compute KID (saves features for estimation) |
+| `--kid-subset-size INT` | `1000` | Samples per KID subset |
+| `--kid-subset-count INT` | `100` | Number of KID subset trials |
+| `--seed INT` | `42` | Random seed for KID |
+
+### Output
+
+- Prints FID (and KID mean/stderr if enabled) to console.
+- Saves results to the specified `--output-json` as JSON, including FID/KID, backbone name, weight info, image counts, normalization values, UTC timestamp, and input directories.
+
+## Preprocessing Differences
+
+- `compute_cem_fid.py` uses CEM's ResNet50, converting grayscale EM images to 3 channels and applying the same normalization (mean/std) and resolution (224) used during CEM pre-training. Output features are ResNet50's global average pooling (2048 dimensions).
+- `compute_normal_fid.py` uses ImageNet pre-trained Inception v3, resizing RGB inputs (grayscale images are converted to RGB) to 299×299 and applying ImageNet normalization. FID/KID is computed using Inception's output features.
+
+## Best Practices
+
+- Specify directories containing only the images to evaluate (scripts recursively search for images).
+- Increase `--batch-size` on GPU for faster processing, but watch memory usage.
+- When enabling KID, adjust `--kid-subset-size` and `--kid-subset-count` values to balance computation cost.
+
+## Docker Usage Example (CEM ResNet50)
 
 ```bash
 sudo docker run --rm \
@@ -158,28 +161,28 @@ sudo docker run --rm \
   --data-volume /path/to/real_and_fake:/data
 ```
 
-## Docker ヘルパースクリプト（`run_fid_suite_docker.sh`）
+## Docker Helper Script (`run_fid_suite_docker.sh`)
 
-リポジトリ同梱の `fid/run_fid_suite_docker.sh` を使うと、同じデータセットに対して CEM-FID と通常の Inception FID を連続で測定し、結果を `fid/results/` 配下へ保存できます。主な特徴:
+The bundled `fid/run_fid_suite_docker.sh` runs both CEM-FID and standard Inception FID on the same dataset sequentially, saving results under `fid/results/`. Key features:
 
-- 事前に `fid/setup_fid_env.sh --mode docker` を実行して `cem-fid` イメージをビルドしてください。
-- `REAL_DIR` と `GEN_DIR` をホスト側で指定すると、自動で `/data/real` / `/data/gen` にマウントして実行。
-- `--cem-backbone {cem500k|cem1.5m}` を Script オプションとして指定するだけで、MoCoV2 (CEM500K) と SwAV (CEM1.5M) を切り替え可能（オプションを複数回指定すると、指定したすべてのバックボーンで順番に CEM-FID を計算します）。
-- `fid/weights/` に配置したチェックポイントを自動検出（`--cem-weights` で明示的に指定することも可）。
-- `--` 以降に書いた追加オプションは両方の Python スクリプトへ転送されます（例: `--batch-size 64`）。
+- Run `fid/setup_fid_env.sh --mode docker` beforehand to build the `cem-fid` image.
+- Specify `REAL_DIR` and `GEN_DIR` on the host; they are automatically mounted to `/data/real` and `/data/gen`.
+- Use `--cem-backbone {cem500k|cem1.5m}` to switch between MoCoV2 (CEM500K) and SwAV (CEM1.5M). Specify multiple times to run CEM-FID with all specified backbones sequentially.
+- Checkpoints in `fid/weights/` are auto-detected (or explicitly specify with `--cem-weights`).
+- Arguments after `--` are forwarded to both Python scripts (e.g., `--batch-size 64`).
 
-SwAV 版で CEM-FID を計算したい場合の実行例:
+Example running CEM-FID with SwAV backbone:
 
 ```bash
 ./fid/run_fid_suite_docker.sh /path/to/real /path/to/gen \
   --cem-backbone cem1.5m \
-  --cem-weights /home/tatsuki/デスクトップ/tatsuki_research/programs/cem-dataset/fid/weights/cem1.5m_swav_resnet50_200ep_balanced.pth.tar \
+  --cem-weights /path/to/weights/cem1.5m_swav_resnet50_200ep_balanced.pth.tar \
   -- --batch-size 64
 ```
 
-上記では CEM-FID が SwAV バックボーンで計算され、続いて通常の Inception FID が同じデータで計測されます。`fid/results/cem_fid/cem1.5m/` と `fid/results/normal_fid/` にタイムスタンプ付き JSON が出力されるので、MoCoV2 との差分比較やログ管理が容易です。
+CEM-FID is computed with the SwAV backbone, followed by standard Inception FID on the same data. Results are saved to `fid/results/cem_fid/cem1.5m/` and `fid/results/normal_fid/` with timestamps, making comparison and log management easy.
 
-MoCoV2 と SwAV の両方を一括で評価したい場合は、`--cem-backbone` を複数回指定してください。
+To evaluate with both MoCoV2 and SwAV, specify `--cem-backbone` multiple times:
 
 ```bash
 ./fid/run_fid_suite_docker.sh /path/to/real /path/to/gen \
@@ -188,39 +191,50 @@ MoCoV2 と SwAV の両方を一括で評価したい場合は、`--cem-backbone`
   -- --batch-size 32
 ```
 
-この例では CEM-FID が 2 回（cem500k → cem1.5m の順）実行され、それぞれ `fid/results/cem_fid/cem500k/` と `fid/results/cem_fid/cem1.5m/` に結果が保存されます。その後、通常の Inception FID が 1 回だけ実行され、`fid/results/normal_fid/` に保存されます。
+This runs CEM-FID twice (cem500k → cem1.5m), saving results to `fid/results/cem_fid/cem500k/` and `fid/results/cem_fid/cem1.5m/`. Standard Inception FID runs once, saving to `fid/results/normal_fid/`.
 
-### バッチ処理ヘルパー（`run_fid_suite_batch.py`）
+### Batch Processing Helper (`run_fid_suite_batch.py`)
 
-同じ設定で複数のデータセットを一括評価したい場合は、JSON マニフェストを読み込む `fid/run_fid_suite_batch.py` が便利です。`jobs` 配列に複数のジョブを並べておくと、`run_fid_suite_docker.sh` が順番に実行されます。
+For batch evaluation of multiple datasets with the same settings, use `fid/run_fid_suite_batch.py` which reads a JSON manifest. Jobs in the `jobs` array are executed sequentially via `run_fid_suite_docker.sh`.
 
 ```json
 {
   "jobs": [
     {
-      "name": "wannerfib-v2-v1",
-      "real_dir": "/abs/path/to/WannerFIB/v2/real",
-      "gen_dir": "/abs/path/to/WannerFIB/v1/gen",
+      "name": "example-job",
+      "real_dir": "/abs/path/to/real_images",
+      "gen_dir": "/abs/path/to/generated_images",
       "cem_backbones": ["cem500k", "cem1.5m"],
-      "extra_args": ["--batch-size", "32"]
+      "extra_args": ["--batch-size", "256"]
     }
   ]
 }
 ```
 
-上記のようなファイルを `fid/batch_jobs.example.json` に用意しておき、次のように実行します。
+Prepare a file like `fid/batch_jobs.example.json` and run:
 
 ```bash
-./fid/run_fid_suite_batch.py fid/batch_jobs.example.json -- --batch-size 64
+python fid/run_fid_suite_batch.py fid/batch_jobs.example.json
 ```
 
-- `--script` で呼び出すスイートスクリプト（既定は `run_fid_suite_docker.sh`）を差し替え可能です。
-- `jobs` エントリごとに `cem_backbones`, `script_args`（スイート側の追加 CLI オプション）, `extra_args`（`--` 以降に渡すオプション）を個別に設定できます。
-- `--stop-on-error` や `--dry-run` などの制御オプションも用意しています。詳細は `fid/run_fid_suite_batch.py --help` を参照してください。
+To apply global options to all jobs, add them after `--`:
 
-## venv ヘルパースクリプト（`run_fid_suite_venv.sh`）
+```bash
+python fid/run_fid_suite_batch.py fid/batch_jobs.example.json -- --batch-size 64
+```
 
-Docker が利用できないクラスターでは、`fid/setup_fid_env.sh --mode venv --venv-path /path/to/venv` で依存ライブラリ入りの Python venv を用意し、以下のように実行します。
+- `--script` lets you substitute the suite script (default: `run_fid_suite_docker.sh`).
+- `--jobs-base` resolves relative `real_dir` / `gen_dir` paths against a base path.
+- Each job entry can configure:
+  - `cem_backbones`: List of backbones to use (`["cem500k"]`, `["cem1.5m"]`, `["cem500k", "cem1.5m"]`, etc.)
+  - `cem_weights`: Custom weights file path (only for single backbone)
+  - `script_args`: Additional CLI options for the suite script (inserted before `--`)
+  - `extra_args`: Options passed to Python scripts (passed after `--`)
+- Control options like `--stop-on-error`, `--dry-run`, `--json-log`, and `--quiet` are available. See `python fid/run_fid_suite_batch.py --help` for details.
+
+## venv Helper Script (`run_fid_suite_venv.sh`)
+
+For clusters without Docker, prepare a Python venv with dependencies using `fid/setup_fid_env.sh --mode venv --venv-path /path/to/venv`, then run:
 
 ```bash
 ./fid/run_fid_suite_venv.sh REAL_DIR GEN_DIR \
@@ -229,17 +243,19 @@ Docker が利用できないクラスターでは、`fid/setup_fid_env.sh --mode
   -- --batch-size 64 --device cuda
 ```
 
-- `--venv` を省略すると、`fid/../venv` または `fid/venv` を自動検出します。複数ユーザーで共有する場合はパスを明示してください。
-- GPU ノードで実行する際は `--device cuda`（既定は自動判定）や `--batch-size` を環境に合わせて調整してください。CPU のみのノードでは実行できますが処理が非常に遅くなります。
+> **Note**: Unlike the Docker version, `run_fid_suite_venv.sh` only supports specifying `--cem-backbone` **once** (for evaluating multiple backbones, run the script multiple times or use the Docker version / batch processing helper).
 
-## 追加の注意
+- If `--venv` is omitted, `fid/../venv` or `fid/venv` is auto-detected. Specify the path explicitly when sharing among multiple users.
+- On GPU nodes, adjust `--device cuda` (auto-detected by default) and `--batch-size` for your environment. CPU-only nodes work but are very slow.
 
-- ネットワークが使えない環境では、事前学習重みを手動でダウンロードして `--weights-path` に渡してください。
-- 各スクリプトは実行時のメタ情報（タイムスタンプ、入力ディレクトリ、使用オプションなど）を JSON に保存するため、実験ログとして利用できます。
+## Additional Notes
 
-## PNG 整合性チェッカー（`fid/utils/check_png_integrity.py`）
+- For offline environments, manually download pre-trained weights and pass them with `--weights-path`.
+- Each script saves execution metadata (timestamp, input directories, options used, etc.) to JSON for experiment logging.
 
-大量の生成画像を扱う際に、PNG ファイルが破損していないかを事前チェックするための軽量ユーティリティです。
+## PNG Integrity Checker (`fid/utils/check_png_integrity.py`)
+
+A lightweight utility for checking PNG file corruption before processing large sets of generated images.
 
 ```bash
 source .venv/bin/activate
@@ -247,16 +263,16 @@ pip install pillow tqdm
 python fid/utils/check_png_integrity.py /path/to/images
 ```
 
-- 指定ディレクトリ以下の PNG を再帰的に走査し、開けない（`PIL.Image` で例外が出る）ファイルが見つかった場合はそのパスと例外内容をターミナルに表示します。
-- 破損ファイルが無ければ、検査した PNG 枚数と共に「All ... PNG file(s) opened successfully.」と表示されます。
-- `tqdm` がインストールされていれば進捗バーを自動表示します（不要な場合は `--no-progress`）。
-- Pillow (`pip install pillow`) や `tqdm` が未インストールの場合は、先に環境へ導入してください。
+- Recursively scans PNG files under the specified directory and reports any files that fail to open (raise exceptions in `PIL.Image`).
+- If no corrupted files are found, displays "All ... PNG file(s) opened successfully." with the count.
+- Progress bar is shown automatically if `tqdm` is installed (use `--no-progress` to disable).
+- Install Pillow (`pip install pillow`) and `tqdm` if not already present.
 
 ---
 
-スクリプト本体:
+Script files:
 
 - `fid/compute_cem_fid.py`
 - `fid/compute_normal_fid.py`
 
-詳細は各ソースコード内のコマンドライン引数説明を参照してください。
+See the command-line argument descriptions in each source file for details.
